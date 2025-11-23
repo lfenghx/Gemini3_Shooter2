@@ -95,7 +95,7 @@ export const PROJECTILE_STATS = {
   
   CANNON_SPEED: 10,         // Q技能巨炮速度 (原 18，太快了)
   CANNON_DAMAGE: 20,
-  CANNON_SIZE: 50,
+  CANNON_SIZE: 20,
   
   MISSILE_SPEED: 7,         // E技能导弹速度 (原 14，太快看不清)
   MISSILE_TURN_RATE: 0.15,  // 导弹转向灵敏度
