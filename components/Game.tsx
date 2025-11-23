@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useRef, useCallback } from 'react';
 import { COLORS, CANVAS_WIDTH, CANVAS_HEIGHT, GRAVITY, FRICTION, BASE_MOVE_SPEED, JUMP_FORCE, DOUBLE_JUMP_FORCE, LEVEL_CONFIGS, SKILL_COOLDOWNS, SKILL_DURATIONS, PROJECTILE_STATS, KEYS, DASH_SPEED, DASH_DURATION, DASH_COOLDOWN, MAX_HEAT, HEAT_COOLDOWN_RATE, ENEMY_STATS, SPRITES, BOSS_DEATH_DURATION } from '../constants';
 import { GameState, Player, Enemy, Projectile, Platform, Particle, Item, EnemyType, WeaponType, Entity, ProjectileType, LevelMode, DamageNumber } from '../types';
@@ -477,7 +478,7 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
 
     enemiesRef.current.forEach(enemy => {
       if (enemy.dead) return;
-      
+
       // BOSS 濒死慢动作逻辑
       if (enemy.isDying && enemy.dyingTimer) {
           enemy.dyingTimer--;
