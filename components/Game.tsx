@@ -719,7 +719,7 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
       setStats(prev => {
           const newLives = prev.lives - 1;
           if (newLives < 0) {
-              setGameState(GameState.GAME_OVER);
+              setGameState(GameState.SCORE_SUBMIT);
               return prev;
           }
           setTimeout(() => {

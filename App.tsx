@@ -13,6 +13,82 @@ const App: React.FC = () => {
   const [skillCooldowns, setSkillCooldowns] = useState([0, 0, 0, 0]); 
   
   const [upgrades, setUpgrades] = useState({ speed: 0, dmg: 0, fire: 0 });
+  const [playerName, setPlayerName] = useState('');
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // 保存分数到服务器
+  const saveScore = async () => {
+    if (!playerName.trim()) return;
+    
+    try {
+      const response = await fetch('/api/scores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: playerName,
+          score: stats.score,
+          level: stats.level,
+          coins: stats.coins,
+          date: new Date().toLocaleDateString()
+        }),
+      });
+      
+      if (response.ok) {
+        // 保存成功后直接显示排行榜
+        await loadLeaderboard();
+        setGameState(GameState.LEADERBOARD);
+      } else {
+        console.error('保存分数失败');
+        // 如果保存失败，也允许用户继续
+        setGameState(GameState.GAME_OVER);
+      }
+    } catch (error) {
+      console.error('网络错误:', error);
+      // 网络错误时也允许用户继续
+      setGameState(GameState.GAME_OVER);
+    }
+  };
+
+  // 加载排行榜数据
+  const loadLeaderboard = async (page = 1) => {
+    try {
+      const response = await fetch(`/api/scores?page=${page}`);
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboardData(data.scores || []);
+        setTotalPages(data.pagination?.totalPages || 1);
+        setCurrentPage(page);
+        setGameState(GameState.LEADERBOARD);
+      } else {
+        console.error('加载排行榜失败');
+        // 如果加载失败，使用模拟数据
+        setLeaderboardData(getMockLeaderboard());
+        setTotalPages(1);
+        setCurrentPage(1);
+        setGameState(GameState.LEADERBOARD);
+      }
+    } catch (error) {
+      console.error('网络错误:', error);
+      // 网络错误时使用模拟数据
+      setLeaderboardData(getMockLeaderboard());
+      setTotalPages(1);
+      setCurrentPage(1);
+      setGameState(GameState.LEADERBOARD);
+    }
+  };
+
+  // 模拟排行榜数据
+  const getMockLeaderboard = () => [
+    { id: 1, name: 'CyberNinja', score: 15000, level: 10, coins: 500, date: new Date(Date.now() - 1000 * 60 * 60 * 24).toLocaleDateString() },
+    { id: 2, name: 'NeonRunner', score: 12500, level: 8, coins: 420, date: new Date(Date.now() - 1000 * 60 * 60 * 48).toLocaleDateString() },
+    { id: 3, name: 'NightStalker', score: 10000, level: 7, coins: 350, date: new Date(Date.now() - 1000 * 60 * 60 * 72).toLocaleDateString() },
+    { id: 4, name: 'SynthRaider', score: 8500, level: 6, coins: 280, date: new Date(Date.now() - 1000 * 60 * 60 * 96).toLocaleDateString() },
+    { id: 5, name: 'PixelHunter', score: 7000, level: 5, coins: 220, date: new Date(Date.now() - 1000 * 60 * 60 * 120).toLocaleDateString() },
+  ];
 
   const startGame = useCallback((level = 1) => {
     audioService.initialize();
@@ -169,6 +245,12 @@ const App: React.FC = () => {
                 >
                     开始任务
                 </button>
+                <button 
+                    onClick={loadLeaderboard}
+                    className="px-10 py-4 bg-neonPink/10 border-2 border-neonPink text-neonPink hover:bg-neonPink hover:text-black transition-all font-bold text-2xl tracking-wider clip-path-slant hover:shadow-[0_0_20px_#ff00ff]"
+                >
+                    排行榜
+                </button>
             </div>
             <div className="mt-12 p-6 border border-gray-800 bg-gray-900/80 rounded text-gray-300 text-sm text-center shadow-2xl">
                 <p className="text-neonYellow font-bold mb-2 text-lg">操作指南</p>
@@ -185,6 +267,115 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {/* 分数提交界面 */}
+        {gameState === GameState.SCORE_SUBMIT && (
+           <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center backdrop-blur-sm z-50">
+              <h2 className="text-5xl font-bold text-neonBlue mb-4 drop-shadow-[0_0_10px_#00ffff]">记录你的战绩</h2>
+              <p className="text-3xl mb-8 text-white">最终得分: <span className="text-neonGreen">{stats.score}</span></p>
+              
+              <div className="bg-black/60 border border-neonBlue/50 rounded-lg p-8 w-96">
+                <label className="block text-gray-300 mb-2 text-lg">输入你的名字:</label>
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="输入你的名字..."
+                  className="w-full p-3 bg-gray-900 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-neonBlue"
+                  maxLength={20}
+                  autoFocus
+                  onKeyPress={(e) => e.key === 'Enter' && playerName.trim() && saveScore()}
+                />
+                
+                <div className="flex gap-4 mt-8">
+                  <button 
+                    onClick={saveScore}
+                    disabled={!playerName.trim()}
+                    className={`px-6 py-3 font-bold text-xl transition-all ${playerName.trim() ? 'bg-neonGreen text-black hover:bg-neonGreen/80' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                  >
+                    保存分数
+                  </button>
+                  <button 
+                    onClick={() => setGameState(GameState.GAME_OVER)}
+                    className="px-6 py-3 border border-gray-600 text-gray-300 hover:bg-gray-800 font-bold text-xl"
+                  >
+                    跳过
+                  </button>
+                </div>
+              </div>
+           </div>
+        )}
+
+        {/* 排行榜界面 */}
+        {gameState === GameState.LEADERBOARD && (
+          <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center backdrop-blur-sm z-50 overflow-auto">
+            <h2 className="text-5xl font-bold text-neonPink mb-8 drop-shadow-[0_0_15px_rgba(255,0,255,0.5)]">
+            传奇排行榜
+            </h2>
+            
+            {leaderboardData.length > 0 ? (
+              <>
+                <div className="bg-black/60 border border-gray-800 rounded-lg overflow-hidden w-[650px] mb-6">
+                  <div className="grid grid-cols-[60px_1fr_80px_60px_200px] bg-gray-900 p-2 text-gray-400 text-sm">
+                    <div className="font-bold text-center">排名</div>
+                    <div className="font-bold">玩家</div>
+                    <div className="font-bold text-right pr-7">分数</div>
+                    <div className="font-bold text-center">关卡</div>
+                    <div className="font-bold text-right">日期</div>
+                  </div>
+                  
+                  {leaderboardData.map((item, index) => {
+                    const pageNum = Number(currentPage) || 1;
+                    const rank = (pageNum - 1) * 10 + index + 1;
+                    const isTop3 = rank <= 3;
+                    const rankColors = ['text-gold-400', 'text-gray-300', 'text-amber-700'];
+                    
+                    return (
+                      <div key={item.id} className={`grid grid-cols-[60px_1fr_80px_60px_200px] p-2 border-t border-gray-800 ${isTop3 ? 'bg-gray-900/50' : 'bg-black/30'}`}>
+                        <div className={`font-bold text-center ${isTop3 ? rankColors[rank-1] : 'text-gray-400'}`}>
+                          {rank}
+                        </div>
+                        <div className="text-white font-bold truncate">{item.name}</div>
+                        <div className="text-neonGreen font-bold text-right pr-7">{item.score}</div>
+                        <div className="text-neonBlue font-bold text-center">{item.level}</div>
+                        <div className="text-gray-400 font-bold text-right">{item.date || new Date().toLocaleString()}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="flex gap-2 mb-8">
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className={`px-4 py-2 ${currentPage === 1 ? 'bg-gray-800 text-gray-500' : 'bg-gray-800 hover:bg-gray-700 text-white'} rounded`}
+                  >
+                    上一页
+                  </button>
+                  <span className="text-white px-4 py-2">
+                    第 {Number(currentPage)} / {Number(totalPages)} 页
+                  </span>
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage >= totalPages}
+                    className={`px-4 py-2 ${currentPage >= totalPages ? 'bg-gray-800 text-gray-500' : 'bg-gray-800 hover:bg-gray-700 text-white'} rounded`}
+                  >
+                    下一页
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-gray-400 text-xl mb-8">暂无排行榜数据</div>
+            )}
+            
+            <button 
+              onClick={goHome}
+              className="px-8 py-3 border-2 border-neonBlue text-neonBlue hover:bg-neonBlue hover:text-black font-bold text-xl rounded transition-all"
+            >
+              返回主页
+            </button>
+          </div>
+        )}
+        
         {gameState === GameState.GAME_OVER && (
            <div className="absolute inset-0 bg-red-900/90 flex flex-col items-center justify-center backdrop-blur-sm z-50">
               <h2 className="text-6xl font-bold text-neonRed mb-4 drop-shadow-[0_0_10px_#f00]">系统崩溃</h2>
@@ -243,5 +434,7 @@ const ShopItem = ({ title, cost, lvl, icon, onClick, canAfford }: { title: strin
         </div>
     )
 }
+
+
 
 export default App;

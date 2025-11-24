@@ -8,7 +8,9 @@ export enum GameState {
   GAME_OVER,      // 游戏结束
   VICTORY,        // 胜利
   LEVEL_COMPLETE, // 关卡完成
-  SHOP            // 商店界面
+  SHOP,           // 商店界面
+  SCORE_SUBMIT,   // 分数提交界面
+  LEADERBOARD     // 排行榜界面
 }
 
 // 武器类型枚举 (对应升级等级 0-3)
