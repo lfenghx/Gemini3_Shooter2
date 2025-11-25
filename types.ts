@@ -121,6 +121,7 @@ export interface Projectile {
   type: ProjectileType;
   targetId?: number; // 追踪目标ID (导弹用)
   originX?: number;  // 发射点X (用于计算伤害衰减)
+  hasGravity?: boolean; // 新增：是否受重力影响
   
   // 伤害频率限制 (Q技能用)
   hitCooldowns?: Record<number, number>; // key: enemyId, value: lastHitFrame
