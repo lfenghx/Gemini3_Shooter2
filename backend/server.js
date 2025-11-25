@@ -19,8 +19,8 @@ app.post('/api/scores', (req, res) => {
   // 限制名字长度
   const sanitizedName = name.trim().substring(0, 20);
   
-  const sql = 'INSERT INTO scores (name, score, level, coins, createdAt) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)';
-    db.run(sql, [sanitizedName, score, level || 1, coins || 0], function(err) {
+  const sql = 'INSERT INTO scores (name, score, level, coins) VALUES (?, ?, ?, ?)';
+  db.run(sql, [sanitizedName, score, level || 1, coins || 0], function(err) {
     if (err) {
       console.error('保存分数失败:', err.message);
       return res.status(500).json({ error: '保存分数失败' });

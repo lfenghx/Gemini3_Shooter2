@@ -86,7 +86,7 @@ export const SKILL_COOLDOWNS = {
 // --- 技能持续时间 (单位: 帧) ---
 export const SKILL_DURATIONS = {
   RAGE: 600,      // R技能持续: 10秒
-  MISSILE: 300,   // E技能持续: 5秒
+  MISSILE: 1800,   // E技能持续: 5秒
   SHIELD: 180,    // W技能持续: 3秒
 };
 

@@ -1,5 +1,4 @@
 
-
 import React, { useEffect, useRef, useCallback } from 'react';
 import { COLORS, CANVAS_WIDTH, CANVAS_HEIGHT, GRAVITY, FRICTION, BASE_MOVE_SPEED, JUMP_FORCE, DOUBLE_JUMP_FORCE, LEVEL_CONFIGS, SKILL_COOLDOWNS, SKILL_DURATIONS, PROJECTILE_STATS, KEYS, DASH_SPEED, DASH_DURATION, DASH_COOLDOWN, MAX_HEAT, HEAT_COOLDOWN_RATE, ENEMY_STATS, SPRITES, BOSS_DEATH_DURATION } from '../constants';
 import { GameState, Player, Enemy, Projectile, Platform, Particle, Item, EnemyType, WeaponType, Entity, ProjectileType, LevelMode, DamageNumber } from '../types';
@@ -31,6 +30,9 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
   const accumulatorRef = useRef<number>(0);
   const isRunningRef = useRef<boolean>(false);
   const FIXED_TIME_STEP = 1000 / 60; 
+
+  // --- Victory Scene Refs ---
+  const starsRef = useRef<{x: number, y: number, size: number, blinkSpeed: number, offset: number}[]>([]);
 
   // --- Game Entity Refs ---
   const playerRef = useRef<Player>({
@@ -73,10 +75,23 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
     loadSprite('WALKER', SPRITES.WALKER);
     loadSprite('FLYER', SPRITES.FLYER);
     loadSprite('BOSS', SPRITES.BOSS);
+
+    // Initialize Stars for Victory Scene
+    starsRef.current = Array.from({ length: 50 }).map(() => ({
+        x: Math.random() * CANVAS_WIDTH,
+        y: Math.random() * (CANVAS_HEIGHT / 2),
+        size: Math.random() * 2 + 1,
+        blinkSpeed: 0.05 + Math.random() * 0.1,
+        offset: Math.random() * Math.PI * 2
+    }));
   }, []);
 
   // --- Level Init ---
   const initLevel = useCallback((levelIndex: number) => {
+    if (levelIndex > 6) {
+        // Protection against loop if state updates delayed
+        return;
+    }
     const config = LEVEL_CONFIGS[Math.min(levelIndex - 1, LEVEL_CONFIGS.length - 1)];
     levelLengthRef.current = config.length;
     bossSpawnedRef.current = false;
@@ -241,9 +256,15 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
 
   // --- Core Game Logic ---
   const update = useCallback(() => {
-    if (gameState !== GameState.PLAYING) return;
+    if (gameState !== GameState.PLAYING && gameState !== GameState.VICTORY) return;
     frameCountRef.current++;
     if (shakeRef.current > 0) shakeRef.current *= 0.9; 
+
+    // 如果是胜利状态，只更新背景动画，不更新物理逻辑
+    if (gameState === GameState.VICTORY) {
+        cameraXRef.current += 2; // 缓慢滚动背景
+        return;
+    }
 
     const player = playerRef.current;
     const keys = keysPressed.current;
@@ -735,7 +756,17 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
 
   const handleLevelComplete = () => {
       setGameState(GameState.LEVEL_COMPLETE);
-      setTimeout(() => setGameState(GameState.SHOP), 2000);
+      // 如果是第6关 (stats.level === 6)，完成后不进商店，而是直接通关
+      if (stats.level >= 6) {
+          setTimeout(() => {
+              setGameState(GameState.VICTORY);
+              cameraXRef.current = 0; // 重置摄像机，让通关背景从头开始滚
+              audioService.stopMusic();
+              audioService.startVictoryMusic();
+          }, 2000);
+      } else {
+          setTimeout(() => setGameState(GameState.SHOP), 2000);
+      }
   };
 
   const collectItem = (item: Item) => {
@@ -1200,7 +1231,79 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
       }
   };
 
+  const drawVictoryScene = (ctx: CanvasRenderingContext2D) => {
+      // 1. Draw Background (Slow scroll)
+      drawBackground(ctx, cameraXRef.current);
+      
+      // 2. Draw Moon
+      ctx.save();
+      ctx.translate(CANVAS_WIDTH - 150, 100);
+      ctx.shadowBlur = 50; ctx.shadowColor = '#fef3c7';
+      ctx.fillStyle = '#fef3c7'; 
+      ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+
+      // 3. Draw Stars (Twinkling)
+      starsRef.current.forEach(star => {
+          const blink = Math.sin(frameCountRef.current * star.blinkSpeed + star.offset);
+          ctx.globalAlpha = (blink + 1) / 2; 
+          ctx.fillStyle = '#fcd34d';
+          ctx.beginPath(); ctx.arc(star.x, star.y, star.size, 0, Math.PI*2); ctx.fill();
+      });
+      ctx.globalAlpha = 1.0;
+
+      // 4. Draw Moving Ground Grid to simulate walking
+      ctx.save();
+      // Simple perspective grid
+      const floorY = CANVAS_HEIGHT - 50;
+      const moveOffset = (cameraXRef.current * 2) % 100; // Simulate movement speed
+      
+      // Ground plane
+      ctx.fillStyle = '#0a0a12';
+      ctx.fillRect(0, floorY, CANVAS_WIDTH, 50);
+      
+      // Moving lines
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      
+      // Vertical moving lines (perspective) - moving left to right relative to camera
+      for(let x = -moveOffset; x < CANVAS_WIDTH; x += 100) {
+          // Simple vertical lines for floor tiles
+          ctx.moveTo(x, floorY);
+          ctx.lineTo(x - 40, CANVAS_HEIGHT); // Slant left
+      }
+      // Horizontal lines (static relative to screen bottom)
+      ctx.moveTo(0, floorY + 10); ctx.lineTo(CANVAS_WIDTH, floorY + 10);
+      ctx.moveTo(0, floorY + 30); ctx.lineTo(CANVAS_WIDTH, floorY + 30);
+      ctx.stroke();
+      ctx.restore();
+
+      // 5. Draw Player (Walking Centered)
+      const victoryPlayer = {
+          ...playerRef.current,
+          x: CANVAS_WIDTH / 2 - 20,
+          y: CANVAS_HEIGHT - 100, // Positioned perfectly on the floor line
+          vx: 2, // Fake velocity for walking anim
+          isGrounded: true,
+          facingRight: true,
+          rageTimer: 0,
+          missileTimer: 0,
+          shieldActive: false,
+          dead: false,
+          invincibleTimer: 0,
+          weaponHeat: 0
+      };
+      drawPlayerSprite(ctx, victoryPlayer);
+  };
+
   const draw = useCallback((ctx: CanvasRenderingContext2D) => {
+      // 如果是胜利画面，使用专用渲染函数
+      if (gameState === GameState.VICTORY) {
+          drawVictoryScene(ctx);
+          return;
+      }
+
       const camX = cameraXRef.current;
       const shakeX = (Math.random() - 0.5) * shakeRef.current;
       const shakeY = (Math.random() - 0.5) * shakeRef.current;
@@ -1208,7 +1311,6 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       drawBackground(ctx, camX);
       
-      // TRY-CATCH to prevent crashing the entire UI if a single frame fails to render
       try {
           ctx.save();
           ctx.translate(-camX + shakeX, shakeY);
@@ -1305,7 +1407,7 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
           console.error("Rendering error:", e);
           ctx.restore(); // Emergency restore to fix stack
       }
-  }, []);
+  }, [gameState]); // **CRITICAL FIX**: Added gameState dependency
 
   // --- STABLE LOOP PATTERN ---
   const updateRef = useRef(update);
@@ -1356,6 +1458,17 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
 
   useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
+          // Debug Key: 6 => FORCE VICTORY
+          if (e.key === '6') {
+              setGameState(GameState.VICTORY);
+              cameraXRef.current = 0; // Reset camera for clean loop
+              audioService.stopMusic();
+              audioService.startVictoryMusic();
+              return;
+          }
+
+          // VICTORY 状态下不响应游戏操作按键
+          if (gameState === GameState.VICTORY) return;
           if (gameState !== GameState.PLAYING) return;
           keysPressed.current[e.key] = true;
           if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') onPause();
@@ -1394,7 +1507,7 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
           window.removeEventListener('keydown', handleKeyDown);
           window.removeEventListener('keyup', handleKeyUp);
       };
-  }, [gameState, onPause]);
+  }, [gameState, onPause, setGameState]);
 
   useEffect(() => {
       if (gameState === GameState.PLAYING) {

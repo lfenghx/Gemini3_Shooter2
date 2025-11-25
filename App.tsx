@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Game from './components/Game';
 import { GameState } from './types';
@@ -17,9 +16,23 @@ const App: React.FC = () => {
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [showVictoryModal, setShowVictoryModal] = useState(true); // 控制通关时弹窗的显示
+
+  // ESC 返回主页监听
+  useEffect(() => {
+      const handleEsc = (e: KeyboardEvent) => {
+          if (e.key === 'Escape') {
+              if (gameState === GameState.VICTORY) {
+                  goHome();
+              }
+          }
+      };
+      window.addEventListener('keydown', handleEsc);
+      return () => window.removeEventListener('keydown', handleEsc);
+  }, [gameState]);
 
   // 保存分数到服务器
-  const saveScore = async () => {
+  const saveScore = async (fromVictory = false) => {
     if (!playerName.trim()) return;
     
     try {
@@ -38,18 +51,21 @@ const App: React.FC = () => {
       });
       
       if (response.ok) {
-        // 保存成功后直接显示排行榜
-        await loadLeaderboard();
-        setGameState(GameState.LEADERBOARD);
+        if (fromVictory) {
+            setShowVictoryModal(false); // 胜利界面提交后隐藏弹窗，保留画面
+        } else {
+            await loadLeaderboard();
+            setGameState(GameState.LEADERBOARD);
+        }
       } else {
         console.error('保存分数失败');
-        // 如果保存失败，也允许用户继续
-        setGameState(GameState.GAME_OVER);
+        if (!fromVictory) setGameState(GameState.GAME_OVER);
+        else setShowVictoryModal(false);
       }
     } catch (error) {
       console.error('网络错误:', error);
-      // 网络错误时也允许用户继续
-      setGameState(GameState.GAME_OVER);
+      if (!fromVictory) setGameState(GameState.GAME_OVER);
+      else setShowVictoryModal(false);
     }
   };
 
@@ -97,6 +113,7 @@ const App: React.FC = () => {
     setUpgrades({ speed: 0, dmg: 0, fire: 0 }); 
     setHp(5);
     setGameState(GameState.PLAYING);
+    setShowVictoryModal(true); // 重置胜利弹窗显示
   }, []);
 
   const nextLevel = useCallback(() => {
@@ -246,7 +263,7 @@ const App: React.FC = () => {
                     开始任务
                 </button>
                 <button 
-                    onClick={loadLeaderboard}
+                    onClick={() => loadLeaderboard(1)}
                     className="px-10 py-4 bg-neonPink/10 border-2 border-neonPink text-neonPink hover:bg-neonPink hover:text-black transition-all font-bold text-2xl tracking-wider clip-path-slant hover:shadow-[0_0_20px_#ff00ff]"
                 >
                     排行榜
@@ -267,7 +284,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* 分数提交界面 */}
+        {/* 游戏结束时的分数提交界面 */}
         {gameState === GameState.SCORE_SUBMIT && (
            <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center backdrop-blur-sm z-50">
               <h2 className="text-5xl font-bold text-neonBlue mb-4 drop-shadow-[0_0_10px_#00ffff]">记录你的战绩</h2>
@@ -288,7 +305,7 @@ const App: React.FC = () => {
                 
                 <div className="flex gap-4 mt-8">
                   <button 
-                    onClick={saveScore}
+                    onClick={() => saveScore(false)}
                     disabled={!playerName.trim()}
                     className={`px-6 py-3 font-bold text-xl transition-all ${playerName.trim() ? 'bg-neonGreen text-black hover:bg-neonGreen/80' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
                   >
@@ -303,6 +320,39 @@ const App: React.FC = () => {
                 </div>
               </div>
            </div>
+        )}
+
+        {/* 通关界面 VICTORY */}
+        {gameState === GameState.VICTORY && (
+            <div className="absolute inset-0 pointer-events-none z-50 flex flex-col items-center pt-32">
+                <h1 className="text-6xl font-black text-yellow-300 drop-shadow-[0_0_20px_#fbbf24] animate-pulse mb-4">恭喜通关</h1>
+                <p className="text-2xl text-cyan-100 drop-shadow-md mb-10 font-light tracking-widest">无论前路多遥远，我都陪伴着你，加油勇士~</p>
+                
+                {showVictoryModal && (
+                    <div className="pointer-events-auto bg-black/70 border border-yellow-500/50 rounded-lg p-8 w-96 backdrop-blur-md animate-fade-in">
+                        <p className="text-center text-gray-300 mb-6">记录这传奇的一刻</p>
+                        <p className="text-center text-3xl mb-6 text-neonGreen font-bold">{stats.score} 分</p>
+                        
+                        <input
+                          type="text"
+                          value={playerName}
+                          onChange={(e) => setPlayerName(e.target.value)}
+                          placeholder="输入你的名字..."
+                          className="w-full p-3 bg-gray-900/80 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 mb-6"
+                          maxLength={20}
+                        />
+                        
+                        <button 
+                            onClick={() => saveScore(true)}
+                            disabled={!playerName.trim()}
+                            className={`w-full py-3 font-bold text-xl transition-all rounded ${playerName.trim() ? 'bg-yellow-500 text-black hover:bg-yellow-400' : 'bg-gray-700 text-gray-500'}`}
+                        >
+                            保存并欣赏风景
+                        </button>
+                        <p className="text-center text-gray-500 text-xs mt-4">按 ESC 返回主菜单</p>
+                    </div>
+                )}
+            </div>
         )}
 
         {/* 排行榜界面 */}
@@ -399,8 +449,15 @@ const App: React.FC = () => {
         
         {gameState === GameState.LEVEL_COMPLETE && (
             <div className="absolute inset-0 bg-green-900/90 flex flex-col items-center justify-center backdrop-blur-sm z-50">
-                <h2 className="text-4xl font-bold text-white animate-bounce">区域肃清!</h2>
-                <p className="text-gray-300">前往黑市...</p>
+                {stats.level < 6 ? (
+                  <>
+                    <h2 className="text-4xl font-bold text-white animate-bounce">区域肃清!</h2>
+                    <p className="text-gray-300">前往黑市...</p>
+                  </>
+                ) : (
+                  // 最后一关完成时不显示任何文字，等待胜利画面
+                  <div className="animate-pulse text-2xl text-yellow-300">最终胜利...</div>
+                )}
             </div>
         )}
 

@@ -6,10 +6,11 @@ class AudioService {
   private nextNoteTime: number = 0;
   private timerID: number | null = null;
   private isPlaying: boolean = false;
-  private tempo: number = 145; // High tempo for combat
+  private tempo: number = 145; 
   private lookahead: number = 25.0;
   private scheduleAheadTime: number = 0.1;
   private beatCount: number = 0;
+  private mode: 'combat' | 'victory' = 'combat'; // Track current music mode
 
   initialize() {
     if (!this.ctx) {
@@ -158,12 +159,18 @@ class AudioService {
       gain.gain.setValueAtTime(vol, time);
       gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
 
-      // Simple filter envelope
       const filter = this.ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(500, time);
-      filter.frequency.linearRampToValueAtTime(2000, time + 0.05);
-      filter.frequency.exponentialRampToValueAtTime(500, time + duration);
+      if (this.mode === 'combat') {
+          filter.frequency.setValueAtTime(500, time);
+          filter.frequency.linearRampToValueAtTime(2000, time + 0.05);
+          filter.frequency.exponentialRampToValueAtTime(500, time + duration);
+      } else {
+          // Victory mode: softer filter
+          filter.frequency.setValueAtTime(300, time);
+          filter.frequency.linearRampToValueAtTime(600, time + duration/2);
+          filter.frequency.linearRampToValueAtTime(300, time + duration);
+      }
 
       osc.connect(filter);
       filter.connect(gain);
@@ -187,7 +194,6 @@ class AudioService {
           osc.start(time);
           osc.stop(time + 0.5);
       } else {
-          // Hi-hat noise
           const bufferSize = this.ctx.sampleRate * 0.05;
           const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
           const data = buffer.getChannelData(0);
@@ -211,7 +217,11 @@ class AudioService {
   private scheduler() {
       if (!this.ctx) return;
       while (this.nextNoteTime < this.ctx.currentTime + this.scheduleAheadTime) {
-          this.scheduleNote(this.beatCount, this.nextNoteTime);
+          if (this.mode === 'combat') {
+              this.scheduleCombatNote(this.beatCount, this.nextNoteTime);
+          } else {
+              this.scheduleVictoryNote(this.beatCount, this.nextNoteTime);
+          }
           this.nextStep();
       }
       if (this.isPlaying) {
@@ -221,46 +231,66 @@ class AudioService {
 
   private nextStep() {
       const secondsPerBeat = 60.0 / this.tempo;
-      this.nextNoteTime += 0.25 * secondsPerBeat; // 16th notes
+      this.nextNoteTime += 0.25 * secondsPerBeat; 
       this.beatCount++;
   }
 
-  private scheduleNote(beatNumber: number, time: number) {
-      // 16 steps per bar
+  private scheduleCombatNote(beatNumber: number, time: number) {
       const step = beatNumber % 16;
-      
-      // Kick: 0, 4, 8, 12 (Four on the floor)
-      if (step % 4 === 0) {
-          this.playDrum(time, 'kick');
-      }
-
-      // Hi-hats: Off beats
-      if (step % 2 !== 0) {
-          this.playDrum(time, 'hat');
-      }
-
-      // Bass: Driving 16th note octave bounce
-      const root = 55; // A1
-      if (step % 2 === 0) {
-          this.playNote(time, root, 0.1, 'sawtooth', 0.15);
-      } else {
-          this.playNote(time, root * 2, 0.1, 'sawtooth', 0.1);
-      }
-
-      // Lead Arpeggio (A Minor: A, C, E)
-      // Pattern: A C E C A C E G
+      if (step % 4 === 0) this.playDrum(time, 'kick');
+      if (step % 2 !== 0) this.playDrum(time, 'hat');
+      const root = 55; 
+      if (step % 2 === 0) this.playNote(time, root, 0.1, 'sawtooth', 0.15);
+      else this.playNote(time, root * 2, 0.1, 'sawtooth', 0.1);
       const melody = [440, 523.25, 659.25, 523.25, 440, 523.25, 659.25, 783.99];
       if (step % 2 === 0) {
           const noteIdx = Math.floor(step / 2) % melody.length;
-          // Randomize octave occasionally for tension
           const freq = melody[noteIdx] * (Math.random() > 0.9 ? 2 : 1);
           this.playNote(time, freq, 0.1, 'square', 0.05);
       }
   }
 
+  private scheduleVictoryNote(beatNumber: number, time: number) {
+      // Slow, ambient, melancholic
+      const step = beatNumber % 32; // Longer cycle
+      
+      // Soft Chords: F Major7 -> G Major -> A Minor
+      // No drums, just ambient sine/triangle pads
+      
+      if (step % 8 === 0) {
+          // Base notes every 2 beats
+          let root = 174.61; // F3
+          if (step >= 16) root = 220.00; // A3 (Minor)
+          else if (step >= 8) root = 196.00; // G3
+          
+          this.playNote(time, root, 2.0, 'triangle', 0.15);
+          this.playNote(time, root * 1.5, 2.0, 'sine', 0.1); // Fifth
+      }
+      
+      // Arpeggios (High twinkling stars)
+      if (step % 2 === 0) {
+          const notes = [523.25, 659.25, 783.99, 1046.50]; // C Major Pentatonic
+          const note = notes[Math.floor(Math.random() * notes.length)];
+          this.playNote(time, note, 0.5, 'sine', 0.05);
+      }
+  }
+
   startMusic() {
     if (!this.ctx) this.initialize();
+    this.tempo = 145;
+    this.mode = 'combat';
     if (this.isPlaying) return;
+    this.isPlaying = true;
+    this.beatCount = 0;
+    this.nextNoteTime = this.ctx!.currentTime + 0.1;
+    this.scheduler();
+  }
+
+  startVictoryMusic() {
+    if (!this.ctx) this.initialize();
+    this.tempo = 60; // Much slower
+    this.mode = 'victory';
+    if (this.isPlaying) return; // Just switch mode if playing
     
     this.isPlaying = true;
     this.beatCount = 0;
