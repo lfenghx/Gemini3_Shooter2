@@ -68,11 +68,11 @@ export const SPRITES = {
 export const LEVEL_CONFIGS = [
   // enemies: 敌人总数, length: 关卡长度(像素), bossHp: BOSS血量, bossAggro: BOSS攻击欲望(1-6), mode: 关卡模式(0=普通, 1=卷轴, 2=死斗)
   { enemies: 25, length: 4000, bossHp: 300, bossAggro: 1, mode: 0 }, // 第1关 (普通模式)
-  { enemies: 35, length: 5000, bossHp: 600, bossAggro: 2, mode: 0 }, // 第2关
-  { enemies: 45, length: 6000, bossHp: 1000, bossAggro: 3, mode: 1 }, // 第3关 (强制卷轴模式 - 屏幕自动向右)
-  { enemies: 60, length: 7000, bossHp: 1500, bossAggro: 4, mode: 2 }, // 第4关 (竞技场死斗模式 - 必须杀怪才能走)
-  { enemies: 80, length: 8000, bossHp: 2500, bossAggro: 5, mode: 0 }, // 第5关
-  { enemies: 120, length: 10000, bossHp: 5000, bossAggro: 6, mode: 1 }, // 第6关
+  { enemies: 35, length: 5000, bossHp: 600, bossAggro: 1, mode: 0 }, // 第2关 (降低攻击欲望，便于躲避)
+  { enemies: 45, length: 6000, bossHp: 1000, bossAggro: 2, mode: 1 }, // 第3关 (强制卷轴模式)
+  { enemies: 60, length: 7000, bossHp: 1500, bossAggro: 2, mode: 2 }, // 第4关 (竞技场死斗模式)
+  { enemies: 80, length: 8000, bossHp: 2500, bossAggro: 3, mode: 2 }, // 第5关 (竞技场死斗模式)
+  { enemies: 120, length: 10000, bossHp: 5000, bossAggro: 4, mode: 1 } // 第6关 (所有关卡攻击欲望均降低1-2级)
 ];
 
 // --- 技能冷却时间 (单位: 帧, 游戏运行在60帧/秒) ---
@@ -86,7 +86,7 @@ export const SKILL_COOLDOWNS = {
 // --- 技能持续时间 (单位: 帧) ---
 export const SKILL_DURATIONS = {
   RAGE: 600,      // R技能持续: 10秒
-  MISSILE: 1800,   // E技能持续: 5秒
+  MISSILE: 300,   // E技能持续: 5秒
   SHIELD: 180,    // W技能持续: 3秒
 };
 
@@ -109,7 +109,7 @@ export const PROJECTILE_STATS = {
   
   SHOCKWAVE_DAMAGE: 10,     // (已弃用) 震荡波伤害
   
-  BOSS_PROJECTILE_SPEED: 4  // BOSS弹幕飞行速度 (独立控制，防止太快)
+  BOSS_PROJECTILE_SPEED: 3  // BOSS弹幕飞行速度 (降低至3，便于玩家躲避)
 };
 
 // --- 按键映射配置 ---

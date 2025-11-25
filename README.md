@@ -1,20 +1,209 @@
+# 霓虹射手 - Neon Runner
+
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  <img src="https://placeholder.pics/svg/800x300/050510-ffffff/霓虹射手%20Neon%20Runner" alt="霓虹射手游戏封面" />
 </div>
 
-# Run and deploy your AI Studio app
+## 🎮 游戏简介
 
-This contains everything you need to run your app locally.
+**霓虹射手**是一款激动人心的 2D 平台射击游戏，融合了经典的平台跳跃玩法与现代的射击元素。玩家将控制一个霓虹风格的角色，在充满挑战的关卡中与各种敌人战斗，收集分数，并争取登上排行榜！
 
-View your app in AI Studio: https://ai.studio/apps/drive/1mZH7aHHCUeiEe04dS_icTFSvZw9l60I-
+### 游戏特色
 
-## Run Locally
+- **炫酷的霓虹视觉效果**：游戏采用霓虹配色方案，呈现出极具未来感的视觉体验
+- **多样化的游戏机制**：包括跳跃、射击、冲刺、护盾等多种技能
+- **多种敌人类型**：从简单的步行者到强大的飞行者和最终 BOSS
+- **武器升级系统**：提升你的武器等级，增强战斗能力
+- **分数排行榜**：记录最高分，与全球玩家一较高下
 
-**Prerequisites:**  Node.js
+## 🕹️ 游戏玩法
 
+### 基本操作
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- **方向键** 或 **WASD**：移动和跳跃
+- **空格键**：射击
+- **特殊按键**：使用技能（冲刺、护盾等）
+
+### 角色能力
+
+- **多段跳跃**：可以在空中进行二次跳跃
+- **武器射击**：使用不同等级的武器攻击敌人
+- **技能系统**：
+  - 冲刺：快速穿越障碍物和敌人
+  - 护盾：短暂免疫伤害
+  - 导弹：强大的范围攻击
+  - 特殊武器：随着游戏进行解锁更强大的武器
+
+### 游戏目标
+
+- 在每个关卡中击败所有敌人
+- 尽可能收集高分
+- 生存到最后，挑战最终 BOSS
+- 将你的分数提交到排行榜，成为最强射手！
+
+## 🚀 技术栈
+
+### 前端
+
+- **React 18**：构建用户界面
+- **TypeScript**：提供类型安全
+- **Canvas API**：游戏渲染
+- **Vite**：快速的开发构建工具
+
+### 后端
+
+- **Node.js**：服务器运行环境
+- **Express**：Web 框架
+- **SQLite**：轻量级数据库，存储游戏分数
+- **PM2**：进程管理，确保服务稳定运行
+
+## 📦 部署指南
+
+### 本地开发环境设置
+
+1. **克隆仓库**
+
+   ```bash
+   git clone https://github.com/lfenghx/neon-runner.git
+   cd neon-runner
+   ```
+
+2. **安装依赖**
+
+   ```bash
+   npm run install:all
+   ```
+
+3. **配置环境变量**
+   在项目根目录创建 `.env` 文件：
+
+   ```
+   # 服务器端口配置
+   PORT=6000
+
+   # CORS配置（可选，增强安全性）
+   ALLOWED_ORIGINS=http://localhost:7000
+   ```
+
+4. **启动开发服务器**
+   ```bash
+   npm run dev:all
+   ```
+   这将同时启动前端开发服务器和后端服务器。
+
+### 生产环境部署
+
+#### 前端部署
+
+1. **构建前端代码**
+
+   ```bash
+   npm run build
+   ```
+
+   构建后的文件将位于 `dist` 目录。
+
+2. **部署前端静态文件**
+   可以使用任何静态文件服务器部署，如 Nginx、Netlify、Vercel 等。
+
+#### 后端部署
+
+1. **配置服务器环境**
+
+   - 安装 Node.js 和 npm
+   - 安装 PM2：`npm install -g pm2`
+
+2. **上传后端代码**
+   将 `backend` 目录上传到服务器。
+
+3. **安装后端依赖**
+
+   ```bash
+   cd backend
+   npm install
+   ```
+
+4. **启动后端服务**
+
+   ```bash
+   # 启动服务并设置名称
+   pm2 start server.js --name shoot2
+
+   # 保存当前进程列表，确保系统重启后自动恢复
+   pm2 save
+
+   # 设置PM2自动启动（系统服务）
+   pm2 startup
+   # 然后按照提示执行生成的命令
+   ```
+
+5. **验证服务状态**
+   ```bash
+   pm2 logs shoot2
+   ```
+   检查日志输出，确认服务正常运行。
+
+## 🔧 维护与故障排除
+
+### 常见问题
+
+- **端口冲突**：如果遇到端口冲突，修改 `.env` 文件中的 `PORT` 配置。
+- **数据库错误**：如果出现数据库表不存在的错误，删除 `scores.db` 文件，系统会自动重新创建。
+- **环境变量不生效**：确保已正确安装 dotenv 依赖：`npm install dotenv --save`
+
+## 📝 配置说明
+
+### 游戏配置
+
+游戏的主要配置位于 `constants.ts` 文件中，包括：
+
+- 画布尺寸和物理参数
+- 角色移动速度和跳跃力度
+- 敌人属性和颜色方案
+- 技能冷却时间和效果参数
+
+### 服务器配置
+
+服务器配置通过 `.env` 文件进行管理：
+
+- `PORT`：服务器端口
+- `ALLOWED_ORIGINS`：允许的跨域请求源
+
+## ✨ 未来更新计划
+
+- [ ] 更多关卡和敌人类型
+- [ ] 角色定制选项
+- [ ] 多人游戏模式
+- [ ] 成就系统
+
+## 📊 项目结构
+
+```
+├── backend/           # 后端代码目录
+│   ├── db.js          # 数据库连接和操作
+│   ├── server.js      # Express服务器
+│   └── package.json   # 后端依赖配置
+├── components/        # React组件
+│   └── Game.tsx       # 游戏主组件
+├── services/          # 服务层
+│   └── audioService.ts # 音频服务
+├── constants.ts       # 游戏常量和配置
+├── types.ts           # TypeScript类型定义
+├── index.tsx          # 应用入口
+└── package.json       # 前端依赖配置
+```
+
+## 👨‍💻 关于作者
+
+**元视界\_O 凌枫 o**
+
+- **GitHub**: [lfenghx](https://github.com/lfenghx)
+- **项目名称**: 霓虹射手 - Neon Runner
+
+## 📄 许可证
+
+本项目仅供学习和娱乐用途。
+
+---
+
+感谢您对**霓虹射手**的关注！希望您享受这款游戏带来的乐趣！🎮💥

@@ -7,7 +7,7 @@ import { SKILL_COOLDOWNS, SHOP_PRICES } from './constants';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.MENU);
-  const [stats, setStats] = useState({ score: 0, lives: 3, level: 1, coins: 0 });
+  const [stats, setStats] = useState({ score: 0, lives: 3, level: 1, coins: 0, time: 0 });
   const [hp, setHp] = useState(5);
   const [skillCooldowns, setSkillCooldowns] = useState([0, 0, 0, 0]); 
   
@@ -17,6 +17,7 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showVictoryModal, setShowVictoryModal] = useState(true); // 控制通关时弹窗的显示
+  const [leaderboardType, setLeaderboardType] = useState<'score' | 'time'>('score'); // 排行榜类型：score-积分榜，time-竞速榜
 
   // ESC 返回主页监听
   useEffect(() => {
@@ -46,7 +47,9 @@ const App: React.FC = () => {
           score: stats.score,
           level: stats.level,
           coins: stats.coins,
-          date: new Date().toLocaleDateString()
+          time: stats.time,
+          isCompleted: fromVictory && stats.level === 6, // 只有在胜利界面且达到第六关才标记为已通关
+          date: new Date().toLocaleString() // 使用完整日期时间格式
         }),
       });
       
@@ -70,19 +73,23 @@ const App: React.FC = () => {
   };
 
   // 加载排行榜数据
-  const loadLeaderboard = async (page = 1) => {
+  const loadLeaderboard = async (page = 1, type?: 'score' | 'time') => {
+    const currentType = type || leaderboardType;
+    const limit = 5; // 每页5条记录
     try {
-      const response = await fetch(`/api/scores?page=${page}`);
+      const response = await fetch(`/api/scores?page=${page}&type=${currentType}&limit=${limit}`);
       if (response.ok) {
         const data = await response.json();
+        // 使用后端返回的排行榜数据
         setLeaderboardData(data.scores || []);
+        // 使用后端计算的分页信息
         setTotalPages(data.pagination?.totalPages || 1);
         setCurrentPage(page);
         setGameState(GameState.LEADERBOARD);
       } else {
         console.error('加载排行榜失败');
         // 如果加载失败，使用模拟数据
-        setLeaderboardData(getMockLeaderboard());
+        setLeaderboardData(getMockLeaderboard(currentType));
         setTotalPages(1);
         setCurrentPage(1);
         setGameState(GameState.LEADERBOARD);
@@ -90,7 +97,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('网络错误:', error);
       // 网络错误时使用模拟数据
-      setLeaderboardData(getMockLeaderboard());
+      setLeaderboardData(getMockLeaderboard(currentType));
       setTotalPages(1);
       setCurrentPage(1);
       setGameState(GameState.LEADERBOARD);
@@ -98,13 +105,24 @@ const App: React.FC = () => {
   };
 
   // 模拟排行榜数据
-  const getMockLeaderboard = () => [
-    { id: 1, name: 'CyberNinja', score: 15000, level: 10, coins: 500, date: new Date(Date.now() - 1000 * 60 * 60 * 24).toLocaleDateString() },
-    { id: 2, name: 'NeonRunner', score: 12500, level: 8, coins: 420, date: new Date(Date.now() - 1000 * 60 * 60 * 48).toLocaleDateString() },
-    { id: 3, name: 'NightStalker', score: 10000, level: 7, coins: 350, date: new Date(Date.now() - 1000 * 60 * 60 * 72).toLocaleDateString() },
-    { id: 4, name: 'SynthRaider', score: 8500, level: 6, coins: 280, date: new Date(Date.now() - 1000 * 60 * 60 * 96).toLocaleDateString() },
-    { id: 5, name: 'PixelHunter', score: 7000, level: 5, coins: 220, date: new Date(Date.now() - 1000 * 60 * 60 * 120).toLocaleDateString() },
-  ];
+  const getMockLeaderboard = (type: 'score' | 'time') => {
+    if (type === 'time') {
+      return [
+        { id: 1, name: 'SpeedRunner', time: 120, isCompleted: 1, date: new Date(Date.now() - 1000 * 60 * 60 * 24).toLocaleString() },
+        { id: 2, name: 'FlashGamer', time: 150, isCompleted: 1, date: new Date(Date.now() - 1000 * 60 * 60 * 48).toLocaleString() },
+        { id: 3, name: 'QuickDraw', time: 180, isCompleted: 1, date: new Date(Date.now() - 1000 * 60 * 60 * 72).toLocaleString() },
+        { id: 4, name: 'SwiftKnight', time: 210, isCompleted: 1, date: new Date(Date.now() - 1000 * 60 * 60 * 96).toLocaleString() },
+        { id: 5, name: 'AgileWarrior', time: 240, isCompleted: 1, date: new Date(Date.now() - 1000 * 60 * 60 * 120).toLocaleString() },
+      ];
+    }
+    return [
+      { id: 1, name: 'CyberNinja', score: 15000, level: 10, coins: 500, date: new Date(Date.now() - 1000 * 60 * 60 * 24).toLocaleString() },
+      { id: 2, name: 'NeonRunner', score: 12500, level: 8, coins: 420, date: new Date(Date.now() - 1000 * 60 * 60 * 48).toLocaleString() },
+      { id: 3, name: 'NightStalker', score: 10000, level: 7, coins: 350, date: new Date(Date.now() - 1000 * 60 * 60 * 72).toLocaleString() },
+      { id: 4, name: 'SynthRaider', score: 8500, level: 6, coins: 280, date: new Date(Date.now() - 1000 * 60 * 60 * 96).toLocaleString() },
+      { id: 5, name: 'PixelHunter', score: 7000, level: 5, coins: 220, date: new Date(Date.now() - 1000 * 60 * 60 * 120).toLocaleString() },
+    ];
+  };
 
   const startGame = useCallback((level = 1) => {
     audioService.initialize();
@@ -150,6 +168,13 @@ const App: React.FC = () => {
           setUpgrades(prev => ({ ...prev, [type]: prev[type] + 1 }));
           audioService.playPowerUp();
       }
+  };
+
+  const getRankIcon = (rank: number) => {
+      if (rank === 1) return <span className="mr-1 text-yellow-400 text-lg">👑</span>;
+      if (rank === 2) return <span className="mr-1 text-gray-300 text-lg">👑</span>;
+      if (rank === 3) return <span className="mr-1 text-amber-600 text-lg">👑</span>;
+      return null;
   };
 
   return (
@@ -201,6 +226,9 @@ const App: React.FC = () => {
                  <div className="bg-black/40 p-2 rounded border border-gray-700">
                     <div className="text-neonGreen font-bold text-2xl shadow-black drop-shadow-md font-[Courier]">{stats.score.toString().padStart(6, '0')}</div>
                     <div className="text-yellow-400 font-bold text-lg">${stats.coins}</div>
+                    <div className="text-blue-400 font-bold text-sm">
+                      时间: {Math.floor(stats.time / 60)}:{(stats.time % 60).toString().padStart(2, '0')}
+                    </div>
                     <div className="text-gray-400 text-sm">关卡 {stats.level}</div>
                  </div>
             </div>
@@ -362,40 +390,107 @@ const App: React.FC = () => {
             传奇排行榜
             </h2>
             
+            {/* 排行榜切换按钮 */}
+            <div className="flex gap-4 mb-6">
+              <button 
+                onClick={() => {
+                  const type = 'score';
+                  setLeaderboardType(type);
+                  loadLeaderboard(1, type);
+                }}
+                className={`px-6 py-2 font-bold text-lg transition-all ${leaderboardType === 'score' ? 'bg-neonBlue text-black hover:bg-neonBlue/80' : 'bg-gray-800 text-white hover:bg-gray-700'}`}
+              >
+                积分榜
+              </button>
+              <button 
+                onClick={() => {
+                  const type = 'time';
+                  setLeaderboardType(type);
+                  loadLeaderboard(1, type);
+                }}
+                className={`px-6 py-2 font-bold text-lg transition-all ${leaderboardType === 'time' ? 'bg-neonBlue text-black hover:bg-neonBlue/80' : 'bg-gray-800 text-white hover:bg-gray-700'}`}
+              >
+                竞速榜
+              </button>
+            </div>
+            
             {leaderboardData.length > 0 ? (
               <>
                 <div className="bg-black/60 border border-gray-800 rounded-lg overflow-hidden w-[650px] mb-6">
-                  <div className="grid grid-cols-[60px_1fr_80px_60px_200px] bg-gray-900 p-2 text-gray-400 text-sm">
-                    <div className="font-bold text-center">排名</div>
-                    <div className="font-bold">玩家</div>
-                    <div className="font-bold text-right pr-7">分数</div>
-                    <div className="font-bold text-center">关卡</div>
-                    <div className="font-bold text-right">日期</div>
-                  </div>
+                  {/* 积分榜表头 */}
+                  {leaderboardType === 'score' && (
+                    <div className="grid grid-cols-[80px_1fr_80px_60px_200px] bg-gray-900 p-2 text-gray-400 text-sm">
+                      <div className="font-bold text-center">排名</div>
+                      <div className="font-bold">玩家</div>
+                      <div className="font-bold text-right pr-7">分数</div>
+                      <div className="font-bold text-center">关卡</div>
+                      <div className="font-bold text-right">日期</div>
+                    </div>
+                  )}
+                  
+                  {/* 竞速榜表头 */}
+                  {leaderboardType === 'time' && (
+                    <div className="grid grid-cols-[80px_1fr_120px_200px] bg-gray-900 p-2 text-gray-400 text-sm">
+                      <div className="font-bold text-center">排名</div>
+                      <div className="font-bold">玩家</div>
+                      <div className="font-bold text-center">通关时间</div>
+                      <div className="font-bold text-right">日期</div>
+                    </div>
+                  )}
                   
                   {leaderboardData.map((item, index) => {
                     const pageNum = Number(currentPage) || 1;
-                    const rank = (pageNum - 1) * 10 + index + 1;
+                    const rank = (pageNum - 1) * 5 + index + 1; // Modified for 5 items per page
                     const isTop3 = rank <= 3;
-                    const rankColors = ['text-gold-400', 'text-gray-300', 'text-amber-700'];
+                    const rankColors = ['text-yellow-400', 'text-gray-300', 'text-amber-600'];
+                    
+                    // 格式化时间（秒转分:秒）
+                    const formatTime = (seconds: number) => {
+                      const mins = Math.floor(seconds / 60);
+                      const secs = seconds % 60;
+                      return `${mins}:${secs.toString().padStart(2, '0')}`;
+                    };
                     
                     return (
-                      <div key={item.id} className={`grid grid-cols-[60px_1fr_80px_60px_200px] p-2 border-t border-gray-800 ${isTop3 ? 'bg-gray-900/50' : 'bg-black/30'}`}>
-                        <div className={`font-bold text-center ${isTop3 ? rankColors[rank-1] : 'text-gray-400'}`}>
-                          {rank}
-                        </div>
-                        <div className="text-white font-bold truncate">{item.name}</div>
-                        <div className="text-neonGreen font-bold text-right pr-7">{item.score}</div>
-                        <div className="text-neonBlue font-bold text-center">{item.level}</div>
-                        <div className="text-gray-400 font-bold text-right">{item.date || new Date().toLocaleString()}</div>
-                      </div>
+                      <>
+                        {/* 积分榜行 */}
+                        {leaderboardType === 'score' && (
+                          <div key={item.id} className={`grid grid-cols-[80px_1fr_80px_60px_200px] p-2 border-t border-gray-800 ${isTop3 ? 'bg-gray-900/50' : 'bg-black/30'}`}>
+                            <div className={`font-bold text-center flex items-center justify-center ${isTop3 ? rankColors[rank-1] : 'text-gray-400'}`}>
+                              {getRankIcon(rank)}
+                              {rank}
+                            </div>
+                            <div className="text-white font-bold truncate flex items-center">{item.name}</div>
+                            <div className="text-neonGreen font-bold text-right pr-7 flex items-center justify-end">{item.score}</div>
+                            <div className="text-neonBlue font-bold text-center flex items-center justify-center">{item.level}</div>
+                            <div className="text-gray-400 font-bold text-right flex items-center justify-end">{item.date || new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+                          </div>
+                        )}
+                        
+                        {/* 竞速榜行 */}
+                        {leaderboardType === 'time' && (
+                          <div key={item.id} className={`grid grid-cols-[80px_1fr_120px_200px] p-2 border-t border-gray-800 ${isTop3 ? 'bg-gray-900/50' : 'bg-black/30'}`}>
+                            <div className={`font-bold text-center flex items-center justify-center ${isTop3 ? rankColors[rank-1] : 'text-gray-400'}`}>
+                              {getRankIcon(rank)}
+                              {rank}
+                            </div>
+                            <div className="text-white font-bold truncate flex items-center">{item.name}</div>
+                            <div className="text-neonGreen font-bold text-center flex items-center justify-center">{formatTime(item.time)}</div>
+                            <div className="text-gray-400 font-bold text-right flex items-center justify-end">{item.date || new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+                          </div>
+                        )}
+                      </>
                     );
                   })}
                 </div>
                 
                 <div className="flex gap-2 mb-8">
                   <button 
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    onClick={() => {
+                      const newPage = Math.max(1, currentPage - 1);
+                      setCurrentPage(newPage);
+                      loadLeaderboard(newPage, leaderboardType);
+                    }}
                     disabled={currentPage === 1}
                     className={`px-4 py-2 ${currentPage === 1 ? 'bg-gray-800 text-gray-500' : 'bg-gray-800 hover:bg-gray-700 text-white'} rounded`}
                   >
@@ -405,7 +500,11 @@ const App: React.FC = () => {
                     第 {Number(currentPage)} / {Number(totalPages)} 页
                   </span>
                   <button 
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    onClick={() => {
+                      const newPage = Math.min(totalPages, currentPage + 1);
+                      setCurrentPage(newPage);
+                      loadLeaderboard(newPage, leaderboardType);
+                    }}
                     disabled={currentPage >= totalPages}
                     className={`px-4 py-2 ${currentPage >= totalPages ? 'bg-gray-800 text-gray-500' : 'bg-gray-800 hover:bg-gray-700 text-white'} rounded`}
                   >

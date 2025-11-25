@@ -178,4 +178,5 @@ export interface GameStats {
   lives: number;
   level: number;
   coins: number; // 金币 (用于商店)
+  time: number; // 游戏时间 (秒)
 }

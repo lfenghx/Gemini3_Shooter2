@@ -7,8 +7,8 @@ import { audioService } from '../services/audioService';
 interface GameProps {
   gameState: GameState;
   setGameState: (state: GameState) => void;
-  stats: { score: number; lives: number; level: number; coins: number };
-  setStats: React.Dispatch<React.SetStateAction<{ score: number; lives: number; level: number; coins: number }>>;
+  stats: { score: number; lives: number; level: number; coins: number; time: number };
+  setStats: React.Dispatch<React.SetStateAction<{ score: number; lives: number; level: number; coins: number; time: number }>>;
   setHp: (hp: number) => void;
   setSkillCooldowns: (cd: number[]) => void;
   onPause: () => void;
@@ -30,6 +30,10 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
   const accumulatorRef = useRef<number>(0);
   const isRunningRef = useRef<boolean>(false);
   const FIXED_TIME_STEP = 1000 / 60; 
+
+  // --- Game Time Tracking ---
+  const gameTimeRef = useRef<number>(0); // 游戏时间（秒）
+  const startTimeRef = useRef<number>(0); // 游戏开始时间
 
   // --- Victory Scene Refs ---
   const starsRef = useRef<{x: number, y: number, size: number, blinkSpeed: number, offset: number}[]>([]);
@@ -99,6 +103,10 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
     levelModeRef.current = config.mode !== undefined ? config.mode : LevelMode.STANDARD;
     shakeRef.current = 0;
     timeScaleRef.current = 1.0;
+    
+    // 重置游戏时间
+    gameTimeRef.current = 0;
+    startTimeRef.current = Date.now();
     
     lockdownTriggeredRef.current = false;
     lockdownClearedRef.current = false;
@@ -262,6 +270,13 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
     if (gameState !== GameState.PLAYING && gameState !== GameState.VICTORY) return;
     frameCountRef.current++;
     if (shakeRef.current > 0) shakeRef.current *= 0.9; 
+
+    // 更新游戏时间
+    if (gameState === GameState.PLAYING) {
+        gameTimeRef.current = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        // 实时更新父组件的stats.time
+        setStats(prev => ({ ...prev, time: gameTimeRef.current }));
+    }
 
     // 如果是胜利状态，只更新背景动画，不更新物理逻辑
     if (gameState === GameState.VICTORY) {
@@ -759,6 +774,10 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
 
   const handleLevelComplete = () => {
       setGameState(GameState.LEVEL_COMPLETE);
+      // 更新游戏时间
+      gameTimeRef.current = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      // 更新stats中的时间
+      setStats(prev => ({ ...prev, time: gameTimeRef.current }));
       // 如果是第6关 (stats.level === 6)，完成后不进商店，而是直接通关
       if (stats.level >= 6) {
           setTimeout(() => {
@@ -1512,11 +1531,19 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
       };
   }, [gameState, onPause, setGameState]);
 
+  // Track if level is initialized so we don't restart on resume
+  const levelInitializedRef = useRef<number>(-1);
+
   useEffect(() => {
       if (gameState === GameState.PLAYING) {
-          initLevel(stats.level);
+          if (levelInitializedRef.current !== stats.level) {
+              initLevel(stats.level);
+              levelInitializedRef.current = stats.level;
+          }
+      } else if (gameState === GameState.MENU || gameState === GameState.GAME_OVER || gameState === GameState.VICTORY) {
+          levelInitializedRef.current = -1;
       }
-  }, [gameState, initLevel]);
+  }, [gameState, stats.level, initLevel]);
 
   return (
     <div className="relative border-4 border-cyan-900 rounded-lg overflow-hidden shadow-[0_0_50px_rgba(0,255,255,0.2)]">
