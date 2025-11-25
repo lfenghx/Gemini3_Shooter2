@@ -77,11 +77,11 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
     loadSprite('BOSS', SPRITES.BOSS);
 
     // Initialize Stars for Victory Scene
-    starsRef.current = Array.from({ length: 50 }).map(() => ({
+    starsRef.current = Array.from({ length: 80 }).map(() => ({
         x: Math.random() * CANVAS_WIDTH,
-        y: Math.random() * (CANVAS_HEIGHT / 2),
+        y: Math.random() * (CANVAS_HEIGHT * 0.6),
         size: Math.random() * 2 + 1,
-        blinkSpeed: 0.05 + Math.random() * 0.1,
+        blinkSpeed: 0.02 + Math.random() * 0.05,
         offset: Math.random() * Math.PI * 2
     }));
   }, []);
@@ -230,7 +230,8 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
                   projectilesRef.current.push({
                       id: Math.random(), x: centerX, y: centerY, width: 10, height: 10,
                       vx: Math.cos(angle) * bossProjSpeed, vy: Math.sin(angle) * bossProjSpeed,
-                      color: COLORS.neonRed, damage: 1, isPlayer: false, lifeTime: 200, type: ProjectileType.NORMAL
+                      color: COLORS.neonRed, damage: 1, isPlayer: false, lifeTime: 200, type: ProjectileType.NORMAL,
+                      hasGravity: false // 螺旋弹幕无重力
                   });
               }
           } else if (patternCycle === 1) {
@@ -241,14 +242,16 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
                    projectilesRef.current.push({
                       id: Math.random(), x: centerX, y: centerY, width: 12, height: 12,
                       vx: Math.cos(angle) * (bossProjSpeed * 1.5), vy: Math.sin(angle) * (bossProjSpeed * 1.5),
-                      color: COLORS.neonYellow, damage: 1, isPlayer: false, lifeTime: 200, type: ProjectileType.NORMAL
+                      color: COLORS.neonYellow, damage: 1, isPlayer: false, lifeTime: 200, type: ProjectileType.NORMAL,
+                      hasGravity: false // 精准弹幕无重力
                    });
                }
           } else {
                projectilesRef.current.push({
                   id: Math.random(), x: centerX, y: centerY - 50, width: 8, height: 8,
                   vx: (Math.random() - 0.5) * (bossProjSpeed * 2.5), vy: -5 - Math.random() * 5, 
-                  color: COLORS.neonGreen, damage: 1, isPlayer: false, lifeTime: 300, type: ProjectileType.NORMAL
+                  color: COLORS.neonGreen, damage: 1, isPlayer: false, lifeTime: 300, type: ProjectileType.NORMAL,
+                  hasGravity: true // 火雨有重力
                });
           }
       }
@@ -262,7 +265,7 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
 
     // 如果是胜利状态，只更新背景动画，不更新物理逻辑
     if (gameState === GameState.VICTORY) {
-        cameraXRef.current += 2; // 缓慢滚动背景
+        cameraXRef.current += 1.5; // 缓慢滚动背景
         return;
     }
 
@@ -461,7 +464,7 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
 
     projectilesRef.current.forEach(p => {
       if (p.type === ProjectileType.NORMAL && !p.isPlayer && p.vy < 10) {
-          if (p.vy < 0 || Math.abs(p.vx) < 2) p.vy += 0.2; 
+          if (p.hasGravity) p.vy += 0.2; 
       }
       p.x += p.vx;
       p.y += p.vy;
@@ -1268,7 +1271,7 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
       ctx.beginPath();
       
       // Vertical moving lines (perspective) - moving left to right relative to camera
-      for(let x = -moveOffset; x < CANVAS_WIDTH; x += 100) {
+      for(let x = -moveOffset; x < CANVAS_WIDTH + 100; x += 100) {
           // Simple vertical lines for floor tiles
           ctx.moveTo(x, floorY);
           ctx.lineTo(x - 40, CANVAS_HEIGHT); // Slant left
