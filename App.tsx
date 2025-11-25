@@ -324,9 +324,9 @@ const App: React.FC = () => {
 
         {/* 通关界面 VICTORY */}
         {gameState === GameState.VICTORY && (
-            <div className="absolute inset-0 pointer-events-none z-50 flex flex-col items-center pt-32">
+            <div className="absolute inset-0 pointer-events-none z-50 flex flex-col items-center pt-20">
                 <h1 className="text-6xl font-black text-yellow-300 drop-shadow-[0_0_20px_#fbbf24] animate-pulse mb-4">恭喜通关</h1>
-                <p className="text-2xl text-cyan-100 drop-shadow-md mb-10 font-light tracking-widest">无论前路多遥远，我都陪伴着你，加油勇士~</p>
+                <p className="text-2xl text-cyan-100 drop-shadow-md mb-8 font-light tracking-widest">无论前路多遥远，我都陪伴着你，加油勇士~</p>
                 
                 {showVictoryModal && (
                     <div className="pointer-events-auto bg-black/70 border border-yellow-500/50 rounded-lg p-8 w-96 backdrop-blur-md animate-fade-in">
