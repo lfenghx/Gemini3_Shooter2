@@ -67,11 +67,11 @@ export const SPRITES = {
 // 数组索引对应关卡等级 (0对应第1关)
 export const LEVEL_CONFIGS = [
   // enemies: 敌人总数, length: 关卡长度(像素), bossHp: BOSS血量, bossAggro: BOSS攻击欲望(1-6), mode: 关卡模式(0=普通, 1=卷轴, 2=死斗)
-  { enemies: 25, length: 4000, bossHp: 300, bossAggro: 1, mode: 0 }, // 第1关 (普通模式)
-  { enemies: 35, length: 5000, bossHp: 600, bossAggro: 1, mode: 0 }, // 第2关 (降低攻击欲望，便于躲避)
-  { enemies: 45, length: 6000, bossHp: 1000, bossAggro: 2, mode: 1 }, // 第3关 (强制卷轴模式)
-  { enemies: 60, length: 7000, bossHp: 1500, bossAggro: 2, mode: 2 }, // 第4关 (竞技场死斗模式)
-  { enemies: 80, length: 8000, bossHp: 2500, bossAggro: 3, mode: 2 }, // 第5关 (竞技场死斗模式)
+  { enemies: 25, length: 5000, bossHp: 300, bossAggro: 1, mode: 0 }, // 第1关 (普通模式)
+  { enemies: 35, length: 6000, bossHp: 800, bossAggro: 1, mode: 0 }, // 第2关 (降低攻击欲望，便于躲避)
+  { enemies: 45, length: 6500, bossHp: 1350, bossAggro: 2, mode: 1 }, // 第3关 (强制卷轴模式)
+  { enemies: 60, length: 7000, bossHp: 2000, bossAggro: 2, mode: 2 }, // 第4关 (竞技场死斗模式)
+  { enemies: 80, length: 8000, bossHp: 3000, bossAggro: 3, mode: 2 }, // 第5关 (竞技场死斗模式)
   { enemies: 120, length: 10000, bossHp: 5000, bossAggro: 4, mode: 1 } // 第6关 (所有关卡攻击欲望均降低1-2级)
 ];
 
@@ -105,7 +105,7 @@ export const PROJECTILE_STATS = {
   MISSILE_DAMAGE: 2,        // E技能导弹单发伤害
   
   LASER_SPEED: 40,          // 激光武器飞行速度 (极快)
-  LASER_DAMAGE: 5,          // 激光武器单发伤害
+  LASER_DAMAGE: 4,          // 激光武器单发伤害
   
   SHOCKWAVE_DAMAGE: 10,     // (已弃用) 震荡波伤害
   

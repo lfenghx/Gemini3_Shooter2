@@ -1480,14 +1480,14 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
 
   useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
-          // Debug Key: 6 => FORCE VICTORY
-          if (e.key === '6') {
-              setGameState(GameState.VICTORY);
-              cameraXRef.current = 0; // Reset camera for clean loop
-              audioService.stopMusic();
-              audioService.startVictoryMusic();
-              return;
-          }
+        // Debug Key: 6 => FORCE VICTORY,调试模式，按6直接跳转到胜利页面
+        //   if (e.key === '6') {
+        //       setGameState(GameState.VICTORY);
+        //       cameraXRef.current = 0; // Reset camera for clean loop
+        //       audioService.stopMusic();
+        //       audioService.startVictoryMusic();
+        //       return;
+        //   }
 
           // VICTORY 状态下不响应游戏操作按键
           if (gameState === GameState.VICTORY) return;

@@ -64,8 +64,8 @@
 1. **克隆仓库**
 
    ```bash
-   git clone https://github.com/lfenghx/neon-runner.git
-   cd neon-runner
+   git clone https://github.com/lfenghx/Gemini3_Shooter2.git
+   cd Gemini3_Shooter2
    ```
 
 2. **安装依赖**
@@ -90,58 +90,6 @@
    npm run dev:all
    ```
    这将同时启动前端开发服务器和后端服务器。
-
-### 生产环境部署
-
-#### 前端部署
-
-1. **构建前端代码**
-
-   ```bash
-   npm run build
-   ```
-
-   构建后的文件将位于 `dist` 目录。
-
-2. **部署前端静态文件**
-   可以使用任何静态文件服务器部署，如 Nginx、Netlify、Vercel 等。
-
-#### 后端部署
-
-1. **配置服务器环境**
-
-   - 安装 Node.js 和 npm
-   - 安装 PM2：`npm install -g pm2`
-
-2. **上传后端代码**
-   将 `backend` 目录上传到服务器。
-
-3. **安装后端依赖**
-
-   ```bash
-   cd backend
-   npm install
-   ```
-
-4. **启动后端服务**
-
-   ```bash
-   # 启动服务并设置名称
-   pm2 start server.js --name shoot2
-
-   # 保存当前进程列表，确保系统重启后自动恢复
-   pm2 save
-
-   # 设置PM2自动启动（系统服务）
-   pm2 startup
-   # 然后按照提示执行生成的命令
-   ```
-
-5. **验证服务状态**
-   ```bash
-   pm2 logs shoot2
-   ```
-   检查日志输出，确认服务正常运行。
 
 ## 🔧 维护与故障排除
 
@@ -169,13 +117,6 @@
 - `PORT`：服务器端口
 - `ALLOWED_ORIGINS`：允许的跨域请求源
 
-## ✨ 未来更新计划
-
-- [ ] 更多关卡和敌人类型
-- [ ] 角色定制选项
-- [ ] 多人游戏模式
-- [ ] 成就系统
-
 ## 📊 项目结构
 
 ```
@@ -198,7 +139,7 @@
 **元视界\_O 凌枫 o**
 
 - **GitHub**: [lfenghx](https://github.com/lfenghx)
-- **项目名称**: 霓虹射手 - Neon Runner
+- **项目名称**: 霓虹战士 - Neon Runner
 
 ## 📄 许可证
 
@@ -206,4 +147,4 @@
 
 ---
 
-感谢您对**霓虹射手**的关注！希望您享受这款游戏带来的乐趣！🎮💥
+感谢您对**霓虹战士**的关注！希望您享受这款游戏带来的乐趣！🎮💥
