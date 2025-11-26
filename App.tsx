@@ -127,7 +127,7 @@ const App: React.FC = () => {
   const startGame = useCallback((level = 1) => {
     audioService.initialize();
     audioService.startMusic();
-    setStats(prev => ({ ...prev, level, lives: 3, score: level === 1 ? 0 : prev.score, coins: level === 1 ? 0 : prev.coins }));
+    setStats(prev => ({ ...prev, level, lives: 3, score: level === 1 ? 0 : prev.score, coins: level === 1 ? 0 : prev.coins, time: level === 1 ? 0 : prev.time }));
     setUpgrades({ speed: 0, dmg: 0, fire: 0 }); 
     setHp(5);
     setGameState(GameState.PLAYING);

@@ -104,9 +104,11 @@ const Game: React.FC<GameProps> = ({ gameState, setGameState, stats, setStats, s
     shakeRef.current = 0;
     timeScaleRef.current = 1.0;
     
-    // 重置游戏时间
-    gameTimeRef.current = 0;
-    startTimeRef.current = Date.now();
+    // 只在第一关开始时初始化时间，后续关卡不重置
+    if (levelIndex === 1) {
+        gameTimeRef.current = 0;
+        startTimeRef.current = Date.now();
+    }
     
     lockdownTriggeredRef.current = false;
     lockdownClearedRef.current = false;
