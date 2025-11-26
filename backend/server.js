@@ -87,18 +87,24 @@ app.get('/api/scores', (req, res) => {
         return res.status(500).json({ error: '获取排行榜数据失败' });
       }
       
-      // 格式化日期，包含时分秒
-      const formattedRows = rows.map(row => ({
-        ...row,
-        date: new Date(row.createdAt).toLocaleString('zh-CN', { 
-          year: 'numeric', 
-          month: '2-digit', 
-          day: '2-digit', 
-          hour: '2-digit', 
-          minute: '2-digit', 
-          second: '2-digit' 
-        })
-      }));
+      // 格式化日期，通过手动添加8小时偏移量来处理时区问题
+      const formattedRows = rows.map(row => {
+        const date = new Date(row.createdAt);
+        // 手动添加8小时（28800000毫秒）的时区偏移量
+        const localDate = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+        
+        return {
+          ...row,
+          date: localDate.toLocaleString('zh-CN', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit'
+          })
+        };
+      });
       
       res.json({
         scores: formattedRows,
